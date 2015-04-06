@@ -8,9 +8,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Lexer {
+  // \s*((//.*)|( pat1 )|( pat2 )| pat3)? という構成
+  // 空白, コメント, pat1(整数リテラル), pat2(文字列リテラル), pat3(識別子) のどれかにマッチする正規表現
   public static String regexPat
     = "\\s*((//.*)|([0-9]+)|(\"(\\\\"|\\\\\\\\|\\\\n|[^\"]*\")" + "|[A-Z_a-z][A-Z_a-z_0-9]*|==|<=|>=|&&|\\|\\||\\p{Punct})?";
+  // 正規表現をPatternオブジェクトにコンパイルする->Matcherオブジェクトに渡す
   private Pattern pattern = Pattern.compile(regexPat);
+  // readLine()により取り出したトークンをいったん保存するキュー
+  // readメソッドで取り出された時に削除
   private ArrayList<Token> queue = new ArrayList<Token>();
   private boolean hasMore;
   private LineNumberReader reader;
@@ -20,6 +25,8 @@ public class Lexer {
     reader = new LineNumberReader(r);
   }
 
+  // メインになるメソッドひとつめ
+  // 呼ばれるたびにソースコードの先頭からトークンを1つずつ順番に取り出して返す
   public Token read() throws ParseException {
     if (fillQueue(0))
       return queue.remove(0);
@@ -27,6 +34,10 @@ public class Lexer {
       return Token.EOF;
   }
 
+  // メインになるメソッドふたつめ
+  // 先読みをするためのメソッド
+  // backtrackに対応するために必要
+  // readもないと覚えなくていいtokenも覚えないといけなくてメモリ消費量が増える
   public Token peek(int i) throws ParseException {
     if (fillQueue(i))
       return queue.get(i);
@@ -55,14 +66,20 @@ public class Lexer {
       return;
     }
     int lineNo = reader.getLineNumber();
+    // 正規表現からMatcherオブジェクトを生成
     Matcher matcher = pattern.matcher(line);
     matcher.useTransparentBounds(true).useAnchoringBounds(false);
     int pos = 0;
     int endPos = line.length();
+    // 行の中にトークンがなくなるまで繰り返す
     while (pos < endPos) {
+      // 照合範囲を狭める
       matcher.region(pos, endPos);
+      // LookingAt()メソッドで照合範囲の先頭から
+      // 正規表現に一致する部分を調べる
       if (matcher.LookingAt()) {
         addToken(lineNo, matcher);
+        // 一致した範囲の末尾の位置でposを更新
         pos = matcher.end();
       }
       else
