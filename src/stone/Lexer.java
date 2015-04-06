@@ -11,7 +11,9 @@ public class Lexer {
   // \s*((//.*)|( pat1 )|( pat2 )| pat3)? という構成
   // 空白, コメント, pat1(整数リテラル), pat2(文字列リテラル), pat3(識別子) のどれかにマッチする正規表現
   public static String regexPat
-    = "\\s*((//.*)|([0-9]+)|(\"(\\\\"|\\\\\\\\|\\\\n|[^\"]*\")" + "|[A-Z_a-z][A-Z_a-z_0-9]*|==|<=|>=|&&|\\|\\||\\p{Punct})?";
+  = "\\s*((//.*)|([0-9]+)|(\"(\\\\\"|\\\\\\\\|\\\\n|[^\"])*\")"
+    + "|[A-Z_a-z][A-Z_a-z0-9]*|==|<=|>=|&&|\\|\\||\\p{Punct})?";
+
   // 正規表現をPatternオブジェクトにコンパイルする->Matcherオブジェクトに渡す
   private Pattern pattern = Pattern.compile(regexPat);
   // readLine()により取り出したトークンをいったん保存するキュー
@@ -77,7 +79,7 @@ public class Lexer {
       matcher.region(pos, endPos);
       // LookingAt()メソッドで照合範囲の先頭から
       // 正規表現に一致する部分を調べる
-      if (matcher.LookingAt()) {
+      if (matcher.lookingAt()) {
         addToken(lineNo, matcher);
         // 一致した範囲の末尾の位置でposを更新
         pos = matcher.end();
@@ -93,7 +95,7 @@ public class Lexer {
     if (m != null) // if not a space
       if (matcher.group(2) == null) { // if not a comment
         Token token;
-        if (matcher.grounp(3) != null)
+        if (matcher.group(3) != null)
           token = new NumToken(lineNo, Integer.parseInt(m));
         else if (matcher.group(4) != null)
           token = new StrToken(lineNo, toStringLiteral(m));
@@ -119,7 +121,7 @@ public class Lexer {
       }
       sb.append(c);
     }
-    return sb.toString(c);
+    return sb.toString();
   }
 
   protected static class NumToken extends Token {
